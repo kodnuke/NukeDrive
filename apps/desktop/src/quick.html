@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>NukeDrive — Hızlı Transfer</title>
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+    --border: #e2e8f0; --accent: #2563eb; --accent-soft: #eff6ff;
+    --ok: #16a34a; --err: #dc2626; --warn: #d97706;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8;
+      --border: #334155; --accent: #3b82f6; --accent-soft: rgba(59,130,246,0.15);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font: 13px/1.4 "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); user-select: none; }
+  .shell { display: flex; flex-direction: column; height: 100vh; border: 1px solid var(--border); }
+
+  /* Header */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; background: var(--card); border-bottom: 1px solid var(--border);
+    -webkit-app-region: drag;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+  .dot.off { background: var(--muted); }
+  .hdr-actions { display: flex; gap: 4px; -webkit-app-region: no-drag; }
+  .icon-btn {
+    border: 1px solid transparent; background: transparent; color: var(--muted);
+    border-radius: 6px; padding: 4px 7px; cursor: pointer; font-size: 12px; font-weight: 600;
+  }
+  .icon-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .icon-btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+  /* Main */
+  main { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* Login Card */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .card h3 { margin: 0 0 6px; font-size: 14px; }
+  .muted { color: var(--muted); font-size: 12px; }
+  input[type=text], input[type=password], select {
+    width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--bg); color: var(--text); font: inherit; margin-top: 6px;
+  }
+  button.primary {
+    background: var(--accent); color: #fff; border: none; border-radius: 7px;
+    padding: 8px 12px; font: inherit; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px;
+  }
+  button.primary:hover { filter: brightness(1.07); }
+  button.btn {
+    background: var(--card); color: var(--text); border: 1px solid var(--border);
+    border-radius: 7px; padding: 6px 10px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Drop Zone */
+  .dropzone {
+    border: 2px dashed var(--border); border-radius: 12px; background: var(--card);
+    padding: 18px 12px; text-align: center; transition: 0.15s ease;
+  }
+  .dropzone.dragover {
+    border-color: var(--accent); background: var(--accent-soft); transform: scale(0.99);
+  }
+  .dropzone .title { font-weight: 700; font-size: 13.5px; margin-bottom: 4px; }
+  .dropzone .btns { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+
+  /* Target Folder Row */
+  .target-row { display: flex; align-items: center; gap: 6px; }
+  .target-row label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .target-row select { margin-top: 0; padding: 5px 8px; font-size: 12px; }
+
+  /* Transfer List */
+  .list-hdr { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .link-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 11px; font-weight: 600; padding: 0; }
+  .transfers { display: flex; flex-direction: column; gap: 6px; }
+  .tx {
+    background: var(--card); border: 1px solid var(--border); border-radius: 9px;
+    padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .tx-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tx-name { font-weight: 600; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tx-status { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .tx-status.ok { color: var(--ok); font-weight: 600; }
+  .tx-status.err { color: var(--err); font-weight: 600; }
+  .bar { height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); transition: width 0.15s linear; }
+  .tx-actions { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+  /* Footer */
+  footer {
+    background: var(--card); border-top: 1px solid var(--border); padding: 8px 12px;
+    display: flex; flex-direction: column; gap: 6px; font-size: 11.5px;
+  }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill {
+    border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px;
+    font-size: 11px; cursor: pointer; background: var(--bg); color: var(--muted);
+  }
+  .pill.on { border-color: var(--ok); color: var(--ok); font-weight: 600; }
+  .storage-row { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+  .msg { font-size: 12px; margin-top: 6px; font-weight: 600; }
+  .msg.err { color: var(--err); }
+  .msg.ok { color: var(--ok); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand">
+      <span class="dot" id="connDot"></span>
+      <span>NukeDrive Hızlı Transfer</span>
+    </div>
+    <div class="hdr-actions">
+      <button class="icon-btn" id="pinBtn" title="Pencereyi sabitle">Sabitle</button>
+      <button class="icon-btn" id="openDriveBtn" title="Ana Drive penceresini aç">Drive</button>
+      <button class="icon-btn" id="openSettingsBtn" title="Ayarlar">Ayarlar</button>
+      <button class="icon-btn" id="hideBtn" title="Gizle">×</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Login View -->
+    <div class="card" id="loginBox" hidden>
+      <h3>Hesabınıza Giriş Yapın</h3>
+      <div class="muted">Hızlı transfer ve sağ tık yüklemeleri için bir kez giriş yapmanız yeterlidir.</div>
+      <input type="text" id="loginUser" placeholder="Kullanıcı adı">
+      <input type="password" id="loginPass" placeholder="Şifre">
+      <button class="primary" id="loginBtn">Giriş Yap</button>
+      <div class="msg err" id="loginErr"></div>
+    </div>
+
+    <!-- Transfer View -->
+    <div id="appBox" hidden style="display:flex;flex-direction:column;gap:10px;">
+      <div class="target-row">
+        <label for="folderSelect">Hedef:</label>
+        <select id="folderSelect"><option value="">Ana Dizin</option></select>
+      </div>
+
+      <div class="dropzone" id="dropzone">
+        <div class="title">Dosya veya Klasör Sürükle &amp; Bırak</div>
+        <div class="muted">100 MB sınırı yok • Parçalı yükleme ile 100 GB'a kadar</div>
+        <div class="btns">
+          <button class="btn" id="pickFilesBtn">Dosya Seç</button>
+          <button class="btn" id="pickFolderBtn">Klasör Seç</button>
+        </div>
+      </div>
+
+      <div class="list-hdr">
+        <span id="txCount">Aktarımlar</span>
+        <button class="link-btn" id="clearTxBtn">Temizle</button>
+      </div>
+      <div class="transfers" id="txList">
+        <div class="muted" style="text-align:center;padding:12px 0;">Henüz aktarım yok. Sağ tık menüsünden veya buradan dosya gönderebilirsiniz.</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="storage-row">
+      <span id="userLabel">Oturum kapalı</span>
+      <span id="storageLabel">—</span>
+    </div>
+    <div class="pills">
+      <button class="pill" id="pillAuto">Başlangıçta Aç: Kapalı</button>
+      <button class="pill" id="pillCtx">Sağ Tık Menüsü: Kapalı</button>
+      <button class="pill" id="logoutBtn" hidden>Çıkış</button>
+    </div>
+  </footer>
+</div>
+<script src="quick.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "name": "@nukedrive/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "bundle": "esbuild ../server/src/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=build/server.cjs --log-level=warning",
+    "dev": "npm run bundle && electron .",
+    "build": "npm run bundle && electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2"
+  },
+  "build": {
+    "appId": "com.nukedrive.desktop",
+    "productName": "NukeDrive",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "build/**/*",
+      "build-res/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../web/dist",
+        "to": "web"
+      },
+      {
+        "from": "../../NukeDrive.apk",
+        "to": "NukeDrive.apk"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build-res/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true
+    }
+  },
+  "description": "NukeDrive ana makine uygulamasi",
+  "author": "NukeDrive"
+}

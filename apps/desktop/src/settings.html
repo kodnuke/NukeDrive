@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>NukeDrive — Kurulum ve Ayarlar</title>
+<style>
+  :root { --bg:#f3f4f6; --card:#fff; --text:#111827; --muted:#6b7280; --border:#e5e7eb; --accent:#2563eb; --ok:#16a34a; --warn:#d97706; --err:#dc2626; --code:#f9fafb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f172a; --card:#1e293b; --text:#f1f5f9; --muted:#94a3b8; --border:#334155; --accent:#60a5fa; --code:#0f172a; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 "Segoe UI", system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width:780px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:16px; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+  h2 .n { background:var(--accent); color:#fff; border-radius:50%; width:22px; height:22px; font-size:12px; display:inline-flex; align-items:center; justify-content:center; }
+  section { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:18px; margin:14px 0; }
+  .muted { color:var(--muted); }
+  label.row { display:flex; gap:8px; align-items:flex-start; margin:8px 0; cursor:pointer; }
+  label.row input { margin-top:3px; }
+  .field { display:block; margin:10px 0; }
+  .field span { display:block; font-weight:600; margin-bottom:4px; }
+  input[type=text], input[type=number], input[type=password] { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; background:var(--code); color:var(--text); font:inherit; }
+  button { font:inherit; padding:8px 14px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:var(--text); cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .badge { display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid currentColor; }
+  .ok { color:var(--ok); } .warn { color:var(--warn); } .err { color:var(--err); }
+  code, .url { font-family:Consolas, monospace; background:var(--code); border:1px solid var(--border); border-radius:4px; padding:1px 6px; word-break:break-all; }
+  ol { padding-left:20px; margin:8px 0; } li { margin:4px 0; }
+  pre { background:var(--code); border:1px solid var(--border); border-radius:6px; padding:8px; max-height:160px; overflow:auto; font-size:12px; white-space:pre-wrap; word-break:break-all; }
+  .banner { background:var(--accent); color:#fff; border-radius:10px; padding:16px 18px; margin-top:14px; }
+  .banner b { display:block; font-size:16px; margin-bottom:4px; }
+  .msg { margin-top:8px; font-weight:600; }
+  table { border-collapse:collapse; width:100%; } td { padding:4px 0; vertical-align:top; } td:first-child { width:150px; color:var(--muted); }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>NukeDrive — Kurulum ve Ayarlar</h1>
+  <div class="muted">Tüm kurulumu bu pencereden yapabilirsiniz. Değişiklikler <span id="cfgPath"></span> dosyasına kaydedilir.</div>
+
+  <div class="banner" id="welcome" hidden>
+    <b>Hoş geldiniz!</b>
+    Aşağıdaki adımları sırayla izleyin: hesabınızı oluşturun, isterseniz internete açın, telefona uygulamayı kurun. Her adımı daha sonra tepsideki <i>Kurulum ve ayarlar</i> menüsünden değiştirebilirsiniz.
+  </div>
+
+  <section>
+    <h2><span class="n">1</span> Durum ve Giriş Hesabı (Kullanıcı Adı &amp; Şifre)</h2>
+    <table>
+      <tr><td>Bu bilgisayar</td><td><span class="url" id="localUrl"></span></td></tr>
+      <tr><td>Yerel ağ (Wi-Fi)</td><td id="lanUrls"></td></tr>
+      <tr><td>İnternet yayını</td><td id="internet"></td></tr>
+      <tr><td>Yönetici hesabı</td><td><b id="ownerInfo">Henüz oluşturulmadı</b></td></tr>
+    </table>
+    <label class="field"><span>Kullanıcı Adı</span><input type="text" id="accUsername" placeholder="ör. admin veya yasin"></label>
+    <label class="field"><span>Şifre (En az 6 karakter)</span><input type="password" id="accPassword" placeholder="Yeni şifre belirleyin..."></label>
+    <div class="actions">
+      <button class="primary" id="saveAccount">Kullanıcı Adı ve Şifreyi Kaydet</button>
+      <button data-open="drive">Drive'ı Aç</button>
+      <button data-open="browser">Tarayıcıda Aç</button>
+    </div>
+    <div class="msg" id="accountMsg"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span> İnternete açma (Cloudflare Tunnel)</h2>
+    <p class="muted">Modemde port açmadan, ücretsiz HTTPS ile dışarıdan erişim sağlar. Gerekli <code>cloudflared</code> programı ilk kullanımda Cloudflare'in resmi sürümünden otomatik indirilir.</p>
+    <label class="row"><input type="radio" name="tmode" value="off"> <span><b>Kapalı</b> — sadece bu bilgisayar (ve açıksa yerel ağ)</span></label>
+    <label class="row"><input type="radio" name="tmode" value="quick"> <span><b>Hızlı tünel</b> — hesap gerekmez, hemen çalışır. Adres <code>*.trycloudflare.com</code> olur ve <b>uygulama her açıldığında değişir</b>. Denemek için uygundur.</span></label>
+    <label class="row"><input type="radio" name="tmode" value="token"> <span><b>Kalıcı adres</b> — kendi alan adınızla (ör. <code>drive.alanadiniz.com</code>). Ücretsiz Cloudflare hesabı ve Cloudflare'e eklenmiş bir alan adı gerekir. <b>Önerilen.</b></span></label>
+
+    <div id="tokenBox" hidden>
+      <ol>
+        <li><a href="#" data-open="cloudflare">Cloudflare Zero Trust panelini</a> açın ve giriş yapın.</li>
+        <li><b>Networks → Tunnels → Create a tunnel</b> → <b>Cloudflared</b> seçin, bir ad verin (ör. <i>nukedrive</i>).</li>
+        <li>Kurulum ekranındaki komutta <code>--token</code> kelimesinden sonraki uzun metni kopyalayıp aşağıya yapıştırın. (Komutu çalıştırmanıza gerek yok.)</li>
+        <li><b>Public Hostname</b> adımında alt alan adını ve alan adınızı seçin. <b>Service</b>: <code>HTTP</code> ve <code id="svc"></code> yazıp kaydedin.</li>
+        <li>Aynı adresi aşağıdaki <i>Genel adres</i> kutusuna yazın ve <b>Kaydet ve bağlan</b>'a basın.</li>
+      </ol>
+      <label class="field"><span>Tünel token'ı</span><input type="password" id="token" autocomplete="off" placeholder="eyJh..."></label>
+      <label class="field"><span>Genel adres</span><input type="text" id="publicUrl" placeholder="https://drive.alanadiniz.com"></label>
+    </div>
+    <div class="actions"><button class="primary" id="saveTunnel">Kaydet ve bağlan</button></div>
+    <div class="msg" id="tunnelMsg"></div>
+    <details><summary class="muted">Tünel kayıtları</summary><pre id="tlog"></pre></details>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span> Android uygulaması</h2>
+    <div id="apkBox">
+      <ol>
+        <li>Telefonun tarayıcısında şu adresi açıp APK'yı indirin: <span class="url" id="apkUrl"></span></li>
+        <li>Telefon "bilinmeyen kaynaklardan yükleme" izni isterse verin ve kurun.</li>
+        <li>Uygulamada <b>Sunucu adresi</b> olarak <span class="url" id="appServer"></span> girin, e-posta ve şifrenizle giriş yapın.</li>
+      </ol>
+      <p class="muted" id="apkNote"></p>
+    </div>
+    <p id="apkMissing" class="warn" hidden>Bu kurulumda APK bulunmuyor.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span> Sunucu ayarları</h2>
+    <label class="field"><span>Kimler erişebilir?</span></label>
+    <label class="row"><input type="radio" name="host" value="127.0.0.1"> <span><b>Sadece bu bilgisayar ve tünel</b> (önerilen, en güvenli)</span></label>
+    <label class="row"><input type="radio" name="host" value="0.0.0.0"> <span><b>Yerel ağdaki cihazlar da</b> (aynı Wi-Fi; Windows güvenlik duvarı izin isteyebilir; bağlantı şifrelenmez)</span></label>
+    <label class="row"><input type="checkbox" id="allowRegister"> <span><b>Yeni hesap oluşturmaya izin ver</b> — başkalarına hesap açtıracaksanız geçici olarak açın, sonra kapatın.</span></label>
+    <label class="field"><span>Port</span><input type="number" id="port" min="1024" max="65535"></label>
+    <label class="field"><span>En büyük dosya boyutu (MB)</span><input type="number" id="maxUploadMb" min="1"></label>
+    <p class="muted">Parçalı yükleme (Chunked Upload) aktiftir: 4 MB'lık parçalarla Cloudflare tüneli üzerinden bile 100 GB'a kadar büyük dosyalar (100 MB sınırı olmadan) yüklenebilir.</p>
+    <div class="actions"><button class="primary" id="saveServer">Kaydet ve sunucuyu yeniden başlat</button></div>
+    <div class="msg" id="serverMsg"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span> Masaüstü Entegrasyonu, Başlangıç ve Yedekleme</h2>
+    <label class="row"><input type="checkbox" id="autostart"> <span><b>Windows açılışında başlat</b> — Bilgisayar açıldığında pencere açmadan sistem tepsisinde başlar; telefon, site ve hızlı transfer her zaman hazır olur.</span></label>
+    <label class="row"><input type="checkbox" id="contextMenu"> <span><b>Windows Sağ Tık Menüsüne Ekle ("NukeDrive'a Yükle")</b> — Herhangi bir dosya veya klasöre sağ tıklayıp doğrudan NukeDrive'a gönderebilirsiniz.</span></label>
+    <label class="row"><input type="checkbox" id="notifyOnUpload"> <span><b>Masaüstü bildirimleri</b> — Hızlı transfer veya sağ tık yüklemeleri tamamlandığında Windows bildirimi göster.</span></label>
+    <div class="msg" id="desktopMsg"></div>
+    <p style="margin-top:12px;">Dosyalarınız: <span class="url" id="dataDir"></span></p>
+    <div class="actions">
+      <button data-open="quick">Hızlı Transfer Penceresini Aç</button>
+      <button id="backup">Şimdi yedek al…</button>
+      <button data-open="data">Veri klasörünü aç</button>
+    </div>
+    <div class="msg" id="backupMsg"></div>
+  </section>
+
+  <div class="actions" id="finishBox" hidden>
+    <button class="primary" id="finish">Kurulumu tamamla ve Drive'ı aç</button>
+  </div>
+</main>
+<script src="settings.js"></script>
+</body>
+</html>
