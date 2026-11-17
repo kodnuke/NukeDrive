@@ -1,4 +1,12 @@
+<p align="center">
+  <img src="docs/banner.jpg" alt="NukeDrive — Kendi Açık Kaynaklı Kişisel Bulutun" width="100%" />
+</p>
+
 # NukeDrive — Kendi Açık Kaynaklı Kişisel Bulutun (Self-Hosted Drive)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Web%20%7C%20Android-0ea5e9.svg)](#neden-nukedrive)
+[![Open Source](https://img.shields.io/badge/Open%20Source-Self--Hosted-22c55e.svg)](#neden-nukedrive)
 
 > Kurulum ve detaylı yayın rehberi: [KURULUM.md](KURULUM.md) · Lisans: [MIT](LICENSE)
 
